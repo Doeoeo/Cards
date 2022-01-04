@@ -6,6 +6,9 @@ import matplotlib.patches as patches
 from matplotlib.pyplot import figure
 import numpy as np
 
+
+curIndex = 0
+
 class Card:
 	# Drawing data
 	w = 3
@@ -18,6 +21,8 @@ class Card:
 		self.innerCon = innerCon
 		self.outerCon = [Card] * 8
 
+		# Index each point without regarding outer connections
+		self.pointIndex = [-1] * 5
 		# Drawing data for points and lines
 		self.pointPos = [
 			[0, 0, self.halfDistance, 3 * self.halfDistance, 2 * self.pointDistance, 2 * self.pointDistance, 3 * self.halfDistance, self.halfDistance],
@@ -40,8 +45,8 @@ class Card:
 	# Used to connect cards
 	def connect(self, cards: List):
 		for i in range(len(cards)):
-			self.outerCon[i] = cards[i]
-			self.outerCon[i + 1] = cards[i]
+			self.outerCon[i * 2] = cards[i]
+			self.outerCon[i * 2 + 1] = cards[i]
 
 	# Might be useful :)
 	def left(self): return self.outerCon[0]
@@ -57,12 +62,17 @@ class Card:
 		plt.scatter([d + x for d in self.pointPos[0]], [d + y for d in self.pointPos[1]], c = self.colour)
 		# Draw merged points
 		plt.scatter([d + x for d in self.mergePos[0]], [d + y for d in self.mergePos[1]], c = "black")
+		# Draw index of points
+		for i in range(len(self.mergePos[0])): plt.text(self.mergePos[0][i] + x , self.mergePos[1][i] + y, self.pointIndex[i], c = "red")
+
+
 		# Draw lines
 		for i in range(len(self.innerCon)):
 			plt.plot([self.pointPos[0][i] + x, self.pointPos[0][self.innerCon[i]] + x], 
 					 [self.pointPos[1][i] + y, self.pointPos[1][self.innerCon[i]] + y], c = "red")
 		# Draw merged lines
 		for i in range(len(self.socketCon) - 1):
+			# min so we extract 1 element from set
 			xPts = [self.mergePos[0][i] + x, self.mergePos[0][min(self.socketCon[i])] + x]
 			yPts = [self.mergePos[1][i] + y, self.mergePos[1][min(self.socketCon[i])] + y]
 			plt.plot(xPts, yPts, c = "blue")
@@ -77,9 +87,32 @@ class Card:
 		for i in range(len(self.socketCon) - 1):
 			if (len(self.socketCon[i]) != 1): self.socketCon[i] = {4}
 
+	def assignIndexes(self):
+		print("new")
+		empty = True
+		for i in range(len(self.pointIndex)):
+			if (self.pointIndex[i] == -1): 
+				global curIndex
+				if (i == 4 and empty): continue
+				self.pointIndex[i] = curIndex
+				if (i == 4): 
+					curIndex += 1
+					continue
+				if ((i * 2) % 2 == 0): self.outerCon[i * 2].pointIndex[(i + 2) % 4] = curIndex
+				else: self.outerCon[i * 2].pointIndex[(i + 2) % 4] = curIndex
+				curIndex += 1
+				if (min(self.socketCon[i]) == 4): empty = False
+				
+	def getEdges(self):
+		edges = []
+		for i in range(len(self.pointIndex)): 
+			if(self.socketCon[i] and i != min(self.socketCon[i])):
+				edges.append(tuple(sorted((self.pointIndex[i], self.pointIndex[min(self.socketCon[i])]))))
+		return edges
+
 	# Print override
 	def __repr__(self):
-		return str(self.innerCon) + "\n"
+		return str(self.pointIndex) + "\n"
 
 def drawCards(layout): 
 # For printing a single card
@@ -131,6 +164,12 @@ for i in range(len(cards)):
 	w = i % 7
 	cards[i].connect([layout[h][(w - 1) % 7], layout[(h + 1) % 2][w], layout[h][(w + 1) % 7], layout[(h - 1) % 2][w]])
 
+for i in cards:	i.assignIndexes()
+edges = set()
+for i in cards: edges.update(i.getEdges())
+points = list(range(curIndex))
+print("Points", points)
+print("Edges: ", edges)
 drawCards(layout)
 #cards.randomize()
 #layout = [7][2]
