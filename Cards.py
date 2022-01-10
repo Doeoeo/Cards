@@ -91,17 +91,18 @@ class Card:
 		print("new")
 		empty = True
 		for i in range(len(self.pointIndex)):
+			if (i != 4 and min(self.socketCon[i]) == 4): empty = False
 			if (self.pointIndex[i] == -1): 
 				global curIndex
-				if (i == 4 and empty): continue
+				if (i == 4 and empty): 
+					continue
 				self.pointIndex[i] = curIndex
-				if (i == 4): 
+				if (i == 4):
 					curIndex += 1
 					continue
 				if ((i * 2) % 2 == 0): self.outerCon[i * 2].pointIndex[(i + 2) % 4] = curIndex
 				else: self.outerCon[i * 2].pointIndex[(i + 2) % 4] = curIndex
 				curIndex += 1
-				if (min(self.socketCon[i]) == 4): empty = False
 				
 	def getEdges(self):
 		edges = []
