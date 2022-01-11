@@ -64,9 +64,9 @@ class Card:
 		# Draw points
 		plt.scatter([d + x for d in self.pointPos[0]], [d + y for d in self.pointPos[1]], c = self.colour)
 		# Draw merged points
-		plt.scatter([d + x for d in self.mergePos[0]], [d + y for d in self.mergePos[1]], c = "black")
+		plt.scatter([self.mergePos[0][d] + x for d in range(5)], [self.mergePos[1][d] + y for d in range(5)], c = "black")
 		# Draw index of points
-		for i in range(len(self.mergePos[0])): plt.text(self.mergePos[0][i] + x , self.mergePos[1][i] + y, self.pointIndex[i], c = "red")
+		#for i in range(len(self.mergePos[0])): plt.text(self.mergePos[0][i] + x , self.mergePos[1][i] + y, self.pointIndex[i], c = "red")
 
 
 		# Draw lines
@@ -191,7 +191,7 @@ class Evolution:
 		tmp = [random.sample(list(range(14)), 14) for i in range(7)] 
 		self.agents = [Agent(copy.deepcopy(cards), i) for i in tmp]
 
-		self.min = 100
+		self.min = 0
 		self.minIndex = -1
 		self.evaluate()
 
@@ -199,7 +199,7 @@ class Evolution:
 		for i in range(len(self.agents)):
 			value = self.agents[i].evaluate()
 			print("Agent ", i, " has value ", value)
-			if (value <= self.min): 
+			if (value > self.min): 
 				self.min = value
 
 	def getMin(self):
