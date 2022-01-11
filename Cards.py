@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.pyplot import figure
 import numpy as np
-
+import gudhi as gd
+from collections import defaultdict
 
 curIndex = 0
 
@@ -171,6 +172,43 @@ for i in cards: edges.update(i.getEdges())
 points = list(range(curIndex))
 print("Points", points)
 print("Edges: ", edges)
+
+st = gd.SimplexTree()
+
+for e in edges:
+    st.insert(e)
+
+# NOTE(miha): Count how many times point occurs
+pointIndexOccurances = defaultdict(int)
+for c in cards:
+    for j in c.pointIndex:
+        pointIndexOccurances[j] += 1
+
+# NOTE(miha): Create a new list of all the points, that are connected only to
+# another point.
+doubleConnectedPoints = []
+for p in pointIndexOccurances:
+    if pointIndexOccurances[p] == 2:
+        doubleConnectedPoints.append(p)
+
+# NOTE(miha): If connected point is not in the edge list, we have found another
+# connected component.
+finalPoints = []
+for p in doubleConnectedPoints:
+    found = False
+    for e in edges:
+        if p in e:
+            found = True
+    if not found:
+        finalPoints.append(p)
+
+# NOTE(miha): Compute homology
+st.compute_persistence()
+betti = st.betti_numbers()
+print("betti numbers", betti)
+
+print("connected components", betti[0] + len(finalPoints))
+
 drawCards(layout)
 #cards.randomize()
 #layout = [7][2]
