@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.pyplot import figure
 import numpy as np
+import copy
+from graphcomponents import findComponents
+
 
 
 curIndex = 0
@@ -88,7 +91,6 @@ class Card:
 			if (len(self.socketCon[i]) != 1): self.socketCon[i] = {4}
 
 	def assignIndexes(self):
-		print("new")
 		empty = True
 		for i in range(len(self.pointIndex)):
 			if (i != 4 and min(self.socketCon[i]) == 4): empty = False
@@ -150,28 +152,113 @@ def generateCards(build: List[int], toBuild: List[int], cards: set):
 			generateCards(tmp, tmpBuild.copy(), cards)
 			
 
+
+class Agent:
+	def __init__(self, cards, cardOrder):
+		global curIndex
+		curIndex = 0
+		self.cardOrder = cardOrder
+		self.cards = [cards[i] for i in cardOrder]
+		self.layout = [[Card] * 7 for i in range(2)]
+		for i in range(len(self.cards)): self.layout[int(i / 7)][i % 7] = self.cards[i]
+		for i in range(len(self.cards)): 
+			h = (int)(i / 7)
+			w = i % 7
+			self.cards[i].connect([self.layout[h][(w - 1) % 7], self.layout[(h + 1) % 2][w], self.layout[h][(w + 1) % 7], self.layout[(h - 1) % 2][w]])
+		for i in cards:	i.assignIndexes()
+		
+		self.curIndex = curIndex
+
+
+	def evaluate(self):
+		edges = set()
+		for i in self.cards: edges.update(i.getEdges())
+		points = list(range(self.curIndex))
+
+		return len(findComponents(points, edges))
+
+	def draw(self):
+		edges = set()
+		for i in self.cards: edges.update(i.getEdges())
+		points = list(range(self.curIndex))
+
+		drawCards(self.layout)
+
+
+class Evolution:
+	def __init__(self, cards):
+		self.cards = cards
+		tmp = [random.sample(list(range(14)), 14) for i in range(7)] 
+		self.agents = [Agent(copy.deepcopy(cards), i) for i in tmp]
+
+		self.min = 100
+		self.minIndex = -1
+		self.evaluate()
+
+	def evaluate(self):
+		for i in range(len(self.agents)):
+			value = self.agents[i].evaluate()
+			print("Agent ", i, " has value ", value)
+			if (value <= self.min): 
+				self.min = value
+
+	def getMin(self):
+		return self.agents[self.minIndex]
+
+	def evolve(self, windowSize):
+		agent = self.agents[self.minIndex]
+		cardOrders = []
+		for i in range(7 - windowSize):
+			window = [(i + j) % 7 for j in range(windowSize)]
+			w1 = [agent.cardOrder[j] for j in window]
+			w2 = [agent.cardOrder[j + 7] for j in window]
+			cardOrder = list(set(range(14)) - set(w1) - set(w2))
+			random.shuffle(cardOrder)
+			finCardOrder = [cardOrder[j] for j in range(i)] + w1 + [cardOrder[j] for j in range(i, 7 - windowSize)] + w2 + [cardOrder[j] for j in range(7 - windowSize, len(cardOrder))]
+			cardOrders.append(finCardOrder)
+
+		self.agents = [Agent(copy.deepcopy(self.cards), i) for i in cardOrders]
+		self.evaluate()
+
+	def evolutionStart(self):
+		windowSize = 2
+		while(windowSize < 7):
+			for i in range(30): self.evolve(windowSize)
+			windowSize += 1
+
+		print(" fin Min ", self.min)
+		self.agents[self.minIndex].draw()
+	
+
+
 cardSet = set()
 # Create card inner layouts
 generateCards([0, 1, 2, 3, 4, 5, 6, 7], [-1] * 8, cardSet)
 # Shuffle the cards for a random order
 cards = [Card(list(i)) for i in cardSet]
-random.shuffle(cards)
+
+evolution = Evolution(cards)
+layout = evolution.evolutionStart()
+print("Best random ", evolution.min, " -> ")
+#random.shuffle(cards)
+
+
 
 # Connect the cards between one another
-layout = [[Card] * 7 for i in range(2)]
-for i in range(len(cards)): layout[int(i / 7)][i % 7] = cards[i]
-for i in range(len(cards)): 
-	h = (int)(i / 7)
-	w = i % 7
-	cards[i].connect([layout[h][(w - 1) % 7], layout[(h + 1) % 2][w], layout[h][(w + 1) % 7], layout[(h - 1) % 2][w]])
-
-for i in cards:	i.assignIndexes()
-edges = set()
-for i in cards: edges.update(i.getEdges())
-points = list(range(curIndex))
-print("Points", points)
-print("Edges: ", edges)
-drawCards(layout)
+#layout = [[Card] * 7 for i in range(2)]
+#for i in range(len(cards)): layout[int(i / 7)][i % 7] = cards[i]
+#for i in range(len(cards)): 
+#	h = (int)(i / 7)
+#	w = i % 7
+#	cards[i].connect([layout[h][(w - 1) % 7], layout[(h + 1) % 2][w], layout[h][(w + 1) % 7], layout[(h - 1) % 2][w]])
+#
+#for i in cards:	i.assignIndexes()
+#edges = set()
+#for i in cards: edges.update(i.getEdges())
+#points = list(range(curIndex))
+#print("Points", points)
+#print("Edges: ", edges)
+print(findComponents(points, edges))
 #cards.randomize()
 #layout = [7][2]
 
