@@ -39,8 +39,27 @@ class Card:
 			[self.pointDistance, 2 * self.pointDistance, self.pointDistance, 0, self.pointDistance]
 		]
 
+		# Ocean components
+		# Ocean connections
+		self.oceanCon = [-1] * 5
+		# Drawing data for squished ocean sx
+		self.oceanPos = [
+			[self.pointDistance / 4, self.pointDistance / 4, 1.75 * self.pointDistance, 1.75 * self.pointDistance, self.pointDistance],
+			[self.pointDistance / 4, 1.75 * self.pointDistance, 1.75 * self.pointDistance, self.pointDistance / 4, self.pointDistance]
+		]
+
+		self. oceanIncPos = [
+			[self.pointDistance / 4, self.pointDistance / 4, 1.75 * self.pointDistance, 1.75 * self.pointDistance, self.pointDistance],
+			[self.pointDistance / 4, 1.75 * self.pointDistance, 1.75 * self.pointDistance, self.pointDistance / 4, self.pointDistance]
+		]
+		self.oceanEdgePos = [
+			[0, 0, 2 * self.pointDistance, 2 * self.pointDistance, self.pointDistance],
+			[0, 2 * self.pointDistance, 2 * self.pointDistance, 0, self.pointDistance]
+		]
 		# Merging of the inner connections to 5 (left, down, right, up)
 		self.merge()
+
+
 
 	#def connect(left: Card, down: Card, right: Card, up: Card):
 	# Used to connect cards
@@ -78,6 +97,17 @@ class Card:
 			yPts = [self.mergePos[1][i] + y, self.mergePos[1][min(self.socketCon[i])] + y]
 			plt.plot(xPts, yPts, c = "blue")
 
+		# Draw ocean sx
+		for i in range(len(self.oceanCon) - 1):
+			xPts = [self.oceanIncPos[0][i] + x, self.oceanEdgePos[0][i] + x]
+			yPts = [self.oceanIncPos[1][i] + y, self.oceanEdgePos[1][i] + y]
+			plt.plot(xPts, yPts, c = "brown")	
+			if(self.oceanCon[i] == -1): continue
+			print("Error ", self.oceanCon[i])
+			xPts = [self.oceanPos[0][i] + x, self.oceanPos[0][self.oceanCon[i]] + x]
+			yPts = [self.oceanPos[1][i] + y, self.oceanPos[1][self.oceanCon[i]] + y]
+			plt.plot(xPts, yPts, c = "brown")	
+
 	# Merging of inner connections
 	def merge(self):
 		# Map each inner point to a general l, d, r, u point
@@ -87,6 +117,30 @@ class Card:
 		# If land covers two merged positions we redirect it to a central point
 		for i in range(len(self.socketCon) - 1):
 			if (len(self.socketCon[i]) != 1): self.socketCon[i] = {4}
+
+
+		# Merge points into ocean
+		freeEdges = []
+		for i in range(len(self.socketCon) - 1):
+			if(self.innerCon[(i * 2) % 8]  != (i * 2 - 1) % 8):
+				freeEdges.append(i)
+		if (len(freeEdges) == 2): 
+			self.oceanCon[freeEdges[0]] = freeEdges[1]
+		elif (len(freeEdges) > 2):
+			if (len(freeEdges) == 4):
+				if (min(self.socketCon[0]) == 2):
+					self.oceanCon[0] = 3
+					self.oceanCon[1] = 2
+					return
+				elif(min(self.socketCon[1]) == 3):
+					self.oceanCon[0] = 1
+					self.oceanCon[2] = 3
+					return
+			for i in freeEdges:
+				self.oceanCon[i] = 4
+
+
+
 
 	def assignIndexes(self):
 		print("new")
